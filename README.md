@@ -10,7 +10,7 @@ The packages required for the execution of the code along with the role of each 
 
 ## Packages required
 
-Althoug the following list gather all the most important packages needed to run the project code, a more comprehensive overview is provided in the file [requirements.txt](). The latter can also be directly used to install the packages by typing the specific command on the terminal.
+Althoug the following list gather all the most important packages needed to run the project code, a more comprehensive overview is provided in the file [requirements.txt](https://github.com/EdoardoGruppi/Graph_Based_Learning_For_Drug_Discovery/blob/main/requirements.txt). The latter can also be directly used to install the packages by typing the specific command on the terminal.
 Please note that the descriptions provided in this subsection are taken directly from the package source pages. For more details it is reccomended to directly reference to the related official websites.
 
 **Compulsory :**
