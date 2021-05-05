@@ -1,0 +1,8 @@
+.idea
+logs
+__pycache__
+mx_mg
+rdkit_contrib
+train.py
+examples.py
+Datasets/
