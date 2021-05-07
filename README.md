@@ -21,19 +21,9 @@ Please note that the descriptions provided in this subsection are taken directly
 
 - **Tensorflow** is an open source software library for high performance numerical computation. Its allows easy deployment of computation across a variety of platforms (CPUs, GPUs, TPUs). **Important**: Recently Keras has been completely wrapped within Tensorflow.
 
-- **Pathlib** offers a set of classes to handle filesystem paths.
-
-- **Shutil** provides a number of high-level operations on files and collections of files. In particular, functions are provided which support file copying and removal.
-
 - **Os** provides a portable way of using operating system dependent functionality.
 
 - **Matplotlib** is a comprehensive library for creating static, animated, and interactive visualizations in Python.
-
-- **Seaborn** is a data visualization library based on matplotlib that provides a high-level interface for drawing attractive and informative statistical graphics.
-
-- **Tqdm:** allows to display a smart progress meter to represent the status of a precise loop.
-
-- **Sys** provides functions to manipulate different parts of the Python runtime environment.
 
 ## Role of each file
 
