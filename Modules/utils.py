@@ -1,7 +1,8 @@
 # Import packages
 import requests
 from rdkit.Chem.rdchem import BondType
-from rdkit.Chem import RWMol, Atom
+from rdkit.Chem import RWMol, Atom, SanitizeMol, MolToSmiles, MolFromSmiles
+from Modules.config import *
 
 # Dictionary to identify the type of each bond
 bond_types = {1: BondType.SINGLE, 2: BondType.DOUBLE, 3: BondType.TRIPLE, 4: BondType.AROMATIC}
@@ -13,7 +14,9 @@ atom_types_qm9 = {0: 1, 1: 6, 2: 7, 3: 8, 4: 9}
 def mol_from_graph(nodes, adjacency_matrix):
     """
     Converts a given graph represented by the list of nodes and the adjacency matrix to a rdkit mol object. Note: the
-    result may be conditioned by the automatic addition of some amendments made by the GerMol function.
+    result may differ from the given molecule since the last statement adds hydrogen atoms where needed to
+    respect valency. The mol object outcome may comprise distinct molecules. Use the single_molecule function to
+    retain only the greatest one of them.
 
     :param nodes: list of nodes related to the adjacency matrix.
     :param adjacency_matrix: matrix to define the connections if any within the molecule.
@@ -30,13 +33,16 @@ def mol_from_graph(nodes, adjacency_matrix):
     for ix, row in enumerate(adjacency_matrix):
         for iy, bond in enumerate(row):
             # Read only a half of A (symmetric)
-            if (iy <= ix) & (bond > 0):
+            if (iy < ix) & (bond > 0):
                 # If there is a bond select the type and connect the correct two atoms
                 bond_type = bond_types[bond]
                 mol.AddBond(node_to_idx[ix], node_to_idx[iy], bond_type)
     # Convert RWMol to Mol object
     mol = mol.GetMol()
-    return mol
+    # Kekulize, check valencies, set aromaticity, conjugation and hybridization. If the atom valencies are violated
+    # the molecule is considered invalid.
+    validity = try_except(lambda: SanitizeMol(mol), ValueError)
+    return mol, validity
 
 
 def qm9_to_rdkit_notation(mol):
@@ -52,11 +58,9 @@ def qm9_to_rdkit_notation(mol):
     nodes = [atom_types_qm9[node] for node in nodes]
     # Find the edge types of the edges
     edge_types = mol.e.argmax(axis=1) + 1
-    count = 0
     # Iterate all the non zero element of the matrix and change its value to the corresponding edge type
-    for row, col in zip(*mol.a.nonzero()):
+    for count, (row, col) in enumerate(zip(*mol.a.nonzero())):
         mol.a[row, col] = edge_types[count]
-        count += 1
     # Convert the sparse representation to a full adjacency matrix
     adjacency_matrix = mol.a.toarray()
     return nodes, adjacency_matrix
@@ -79,3 +83,24 @@ def smiles_to_name(smiles):
     else:
         name = 'Name not found'
     return name
+
+
+def single_molecule(mol):
+    """
+    If a molecule object comprises two distinct molecules, this function keeps only the greatest one.
+
+    :param mol: molecule object to evaluate.
+    :return: the new molecule object with a sole molecule.
+    """
+    # Convert the mol object to a smiles string
+    smiles = MolToSmiles(mol)
+    # If a dot is within the string the mol object contains two separate molecules
+    if '.' in smiles:
+        # Split the smiles string whenever a dot is met and keep the longest segment.
+        smiles = max(smiles.split('.'), key=len)
+        # Convert the string back into a mol object
+        mol = MolFromSmiles(smiles)
+    return mol
+
+
+
