@@ -2,6 +2,7 @@
 # It includes also some useful function non strictly related to the project itself
 
 base_dir = './Datasets'
+qm9_atoms_number = 5
 
 
 def try_except(function, expected_exc, result=True, default=False):

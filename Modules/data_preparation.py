@@ -23,7 +23,43 @@ def load_qm9(amount=1000):
     return dataset, F, S, n_out
 
 
+def load_dataset(dataset, node_features, batch_size, epochs, edge_features):
+    """
+    Load the dataset as iterator objects. The function performs some operation before working on the passed dataset.
+
+    :param dataset: a Spektral dataset object.
+    :param node_features: number of node features to keep.
+    :param batch_size: number of examples in every batch.
+    :param epochs: number of epochs to run.
+    :param edge_features: number of edge features to keep.
+    :return: an iterator object.
+    """
+    # Remove all the unwanted features in the edge matrix
+    if dataset.n_edge_features > edge_features:
+        for item in dataset.graphs:
+            item.e = item.e[:, :edge_features]
+    # Remove all the unwanted features in the edge matrix
+    if dataset.n_node_features > node_features:
+        for item in dataset.graphs:
+            item.x = item.x[:, :node_features]
+    # Remove the y field of each graph object since not needed
+    for item in dataset.graphs:
+        item.y = None
+    # Load the iterator object
+    loader_tr, _ = split_dataset(dataset, batch_size, epochs, train_percentage=1)
+    return loader_tr
+
+
 def split_dataset(dataset, batch_size, epochs, train_percentage=0.9):
+    """
+    Splits the dataset when required.
+
+    :param dataset: a Spektral dataset object.
+    :param batch_size: number of examples in every batch.
+    :param epochs: number of epochs to run.
+    :param train_percentage: percentage defining the samples aimed to train the model.
+    :return: two iterator objects.
+    """
     # Shuffle the indexes
     indexes = np.random.permutation(len(dataset))
     # Select the amount of samples to keep for training
