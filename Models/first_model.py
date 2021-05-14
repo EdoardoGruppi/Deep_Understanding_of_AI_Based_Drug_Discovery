@@ -17,21 +17,21 @@ class FirstModel:
         :param n_out: output dimensions.
         """
         # X is the node feature matrix represented by a np.array of shape (n_nodes, n_node_features)
-        X_in = Input(shape=(node_features,), name="X_in")
+        x_in = Input(shape=(node_features,), name='X_in')
         # A is the adjacency matrix, usually a scipy.sparse matrix of shape (n_nodes, n_nodes)
-        A_in = Input(shape=(None,), sparse=True, name="A_in")
+        a_in = Input(shape=(None,), sparse=True, name='A_in')
         # E is the the edge features represented in a sparse edge list format as a np.array of shape (n_edges,
         # n_edge_features)
-        E_in = Input(shape=(edge_features,), name="E_in")
+        e_in = Input(shape=(edge_features,), name='E_in')
         # Vector to keep track of the different graphs in the disjoint union, for convolutional layers it is not needed.
-        I_in = Input(shape=(), name="segment_ids_in", dtype=tf.int32)
+        i_in = Input(shape=(), name='segment_ids_in', dtype=tf.int32)
         # Define model
-        X_1 = ECCConv(32, activation="relu")([X_in, A_in, E_in])
-        X_2 = ECCConv(32, activation="relu")([X_1, A_in, E_in])
-        X_3 = GlobalSumPool()([X_2, I_in])
-        output = Dense(n_out)(X_3)
+        x_1 = ECCConv(32, activation='relu')([x_in, a_in, e_in])
+        x_2 = ECCConv(32, activation='relu')([x_1, a_in, e_in])
+        x_3 = GlobalSumPool()([x_2, i_in])
+        outputs = Dense(units=1)(x_3)
         # Build model
-        self.model = Model(inputs=[X_in, A_in, E_in, I_in], outputs=output)
+        self.model = Model(inputs=[x_in, a_in, e_in, i_in], outputs=outputs)
         self.loss_fn = MeanSquaredError()
 
     def train(self, loader_tr, learning_rate):
