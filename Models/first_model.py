@@ -8,13 +8,12 @@ import tensorflow as tf
 
 
 class FirstModel:
-    def __init__(self, node_features, edge_features, n_out):
+    def __init__(self, node_features, edge_features):
         """
         Create the model.
 
         :param node_features: number of features linked to every node.
         :param edge_features: number of features linked to every node.
-        :param n_out: output dimensions.
         """
         # X is the node feature matrix represented by a np.array of shape (n_nodes, n_node_features)
         x_in = Input(shape=(node_features,), name='X_in')
