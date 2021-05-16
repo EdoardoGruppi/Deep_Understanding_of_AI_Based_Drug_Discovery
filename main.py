@@ -2,8 +2,9 @@
 from Modules.graph_data_preparation import *
 from Models.first_model import *
 from Models.simple_graph_gan import *
-from Modules.smiles_data_preparation import load_datasets
+from Modules.smiles_data_preparation import *
 from Models.char_rnn import CharRNN
+from Models.smiles_vae import SmilesVae
 
 # Load Dataset
 dataset, node_features, edge_features, n_out = load_qm9(amount=96)
@@ -40,6 +41,21 @@ model.train(train_data, train_labels, batch_size=128, epochs=2, save=True)
 # Test the model
 model.test(test_data, test_labels, batch_size=128)
 # # Load the model
-# model.load_char_rnn()
+# model.load_model()
 # Generate new molecules
 model.generate_molecules(new_molecules=50)
+
+# SmilesVAE ========================================================
+# Load the data
+train_data, test_data, charset, length = load_datasets_smiles_vae('CHEMBL_FULL_DATASET.txt', test_size=0.1,
+                                                                  samples=5000)
+# Instantiate the model
+model = SmilesVae(charset=charset, max_length=length, latent_rep_size=292)
+# Train the model
+model.train(train_data, batch_size=128, epochs=2, save=True)
+# Test the model
+model.test(test_data, batch_size=128)
+# # Load the model
+# model.load_model()
+# Generate new molecules
+model.generate_molecules(samples=50, near_molecule=0, stddev=0.1, mean=0)

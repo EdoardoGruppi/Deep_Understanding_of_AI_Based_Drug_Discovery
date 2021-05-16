@@ -10,7 +10,7 @@ import numpy as np
 class CharRNN:
     def __init__(self, input_shape, output_shape, char_int_dict, int_char_dict):
         """
-        Creates an instance of the CharRNN model.A
+        Creates an instance of the CharRNN model.
 
         :param input_shape: shape of the input. Usually the number of unique chars.
         :param output_shape: shape of the output. Usually the number of unique chars.
@@ -73,9 +73,9 @@ class CharRNN:
         no_true = diff_results.size - no_false
         print(f'Average success rate on dataset: {np.round(100 * no_true / diff_results.size, 2)}')
 
-    def load_char_rnn(self):
+    def load_model(self):
         """
-        Load a model previously saved data.
+        Load a model previously saved.
         """
         # Load to continue training or evaluate...
         self.model = load_model(os.path.join('Saved Models', 'SimpleCharRNN'))
@@ -90,7 +90,7 @@ class CharRNN:
         :return: the path directory to the filename.txt file.
         """
         # Generate the required number of molecules
-        new_molecules = [self.generate_single_molecule(plot=plot) for i in range(new_molecules)]
+        new_molecules = [self.generate_single_molecule(plot=plot) for _ in range(new_molecules)]
         # Path to the filename.txt file
         results_file = os.path.join('./Saved Results', filename)
         # Write all the molecules in the file, one per line
