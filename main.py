@@ -5,6 +5,13 @@ from Models.simple_graph_gan import *
 from Modules.smiles_data_preparation import *
 from Models.char_rnn import CharRNN
 from Models.smiles_vae import SmilesVae
+import tensorflow as tf
+
+# set_memory_growth() allocates exclusively the GPU memory needed
+physical_devices = tf.config.experimental.list_physical_devices('GPU')
+print("Num GPUs Available: ", len(physical_devices))
+if len(physical_devices) is not 0:
+    tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
 # Load Dataset
 dataset, node_features, edge_features, n_out = load_qm9(amount=96)
