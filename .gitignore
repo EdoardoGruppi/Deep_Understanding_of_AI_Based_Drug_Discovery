@@ -5,7 +5,9 @@ mx_mg
 rdkit_contrib
 train.py
 examples.py
-Datasets/
+Datasets/CHEMBL_ACTIVE.txt
+Datasets/CHEMBL_FULL_DATASET.txt
+Datasets/CHEMBL_VERY_ACTIVE.txt
 a.py
 Saved Models
 Saved Results
