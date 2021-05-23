@@ -1,13 +1,13 @@
 .idea
 logs
 __pycache__
-mx_mg
-rdkit_contrib
-train.py
-examples.py
-Datasets/CHEMBL_ACTIVE.txt
-Datasets/CHEMBL_FULL_DATASET.txt
-Datasets/CHEMBL_VERY_ACTIVE.txt
+
+Datasets/*
+!Datasets/Datasets.md
+!Datasets/mcf_filters.txt
+!Datasets/pains_filters.txt
+!Datasets/all_filters.txt
+
 a.py
 Saved Models
 Saved Results
