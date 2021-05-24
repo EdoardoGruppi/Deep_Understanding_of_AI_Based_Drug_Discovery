@@ -1,7 +1,10 @@
 # Import packages
-from rdkit.Chem import Crippen, Descriptors, QED, MolFromSmiles, AddHs, MolToSmiles, MolFromSmarts, rdchem
+from rdkit.Chem import Crippen, Descriptors, QED, MolFromSmiles, AddHs, MolToSmiles, MolFromSmarts
 from rdkit.Contrib.SA_Score import sascorer
 from rdkit.Contrib.NP_Score import npscorer
+from rdkit import DataStructs
+from rdkit.ML.Descriptors import MoleculeDescriptors
+from scipy.stats import entropy, gaussian_kde
 import seaborn as sns
 from rdkit.Chem.AllChem import GetMorganFingerprintAsBitVect as Morgan
 import matplotlib.pyplot as plt
@@ -189,7 +192,8 @@ def property_distributions(list_files, list_names, prop='log_p', txt=True):
 
 def frechet_distance(train_file, test_file, chem_net_model_filename='ChemNet_v0.13_pretrained.h5'):
     """
-    Computes the Frechet distance between the training and test data distributions.
+    Computes the Frechet distance between the training and test data distributions. With very large datasets it could
+    be necessary to limit the measurements to smaller ensemble fo molecules.
 
     :param train_file: file path containing smiles strings of the training molecules, one for line.
     :param test_file: file path containing smiles strings of the generated molecules, one for line.
@@ -270,6 +274,7 @@ def filter_molecules(file, allowed=None, filters='pains_filters.txt', check='fil
         or 'complete'.
     :return: the list of smiles strings of the molecules that passed the check.
     """
+    print(f'Filtering the generated molecules with {check} check. Filters selected are: {filters.split(".")[0]}.')
     # Select the required check function
     checks = {'complete': mol_passes_complete_check, 'filters': mol_passes_filters}
     check = checks[check]
@@ -278,7 +283,7 @@ def filter_molecules(file, allowed=None, filters='pains_filters.txt', check='fil
         filters = f.read().splitlines()
         filters = [MolFromSmarts(smart) for smart in filters]
     # List of allowed atoms
-    allowed = allowed or {'C', 'N', 'S', 'O', 'F', 'Cl', 'Br', 'H'}
+    allowed = allowed or {'C', 'N', 'S', 'O', 'F', 'Cl', 'Br', 'H', 'I', 'P'}
     # Consider only the valid smiles strings within the list of molecules to test
     _, smiles_molecules = validity(file)
     # Convert them to mol objects
@@ -287,7 +292,7 @@ def filter_molecules(file, allowed=None, filters='pains_filters.txt', check='fil
     molecules = [mol for mol in molecules if check(mol, filters, allowed)]
     # Represent them with smiles strings
     passed_molecules = [MolToSmiles(mol) for mol in molecules]
-    print(f'The {len(passed_molecules) * 100 / len(smiles_molecules):.2f}% of molecules successfully passed the check.')
+    print(f'{len(passed_molecules) * 100 / len(smiles_molecules):.2f}% of molecules successfully passed the check.\n')
     return passed_molecules
 
 
@@ -363,7 +368,7 @@ def internal_diversity(file, p=1):
     fingerprints = get_fingerprints(molecules)
     # Compute the internal diversity score
     internal_div = 1 - (average_agg_tanimoto(fingerprints, fingerprints, agg='mean', p=p))
-    print(f'Internal diversity is: {internal_div:.4f}')
+    print(f'Internal diversity is: {internal_div:.4f}\n')
     return internal_div
 
 
@@ -461,7 +466,6 @@ def snn_metric(file_ref, file_gen):
 
     :param file_ref: path to the file containing the reference smiles strings to evaluate, one for line.
     :param file_gen: path to the file containing the generated smiles strings to evaluate, one for line.
-    :param p: power for averaging (mean x^p)^(1/p). default_value=1
     :return: the SNN and DfD scores [0,1]. If generated molecules are far from the reference molecules they SNN and DfD
         values are respectively closer to 0 and 1.
     """
@@ -516,7 +520,7 @@ def atom_occurrences(file, atoms_list=('C', 'O', 'N', 'Cl', 'F')):
     print('\nNormalised values')
     for atom, sum_value, count in zip(atoms_list, sum_list, count_list):
         print(f'Atom: {atom:2} - Total occurrences: {sum_value:8.4f} - In {count:7.4f} molecules')
-    print('-' * 57)
+    print('-' * 57 + '\n')
 
 
 def get_atom_list(file):
@@ -540,5 +544,173 @@ def get_atom_list(file):
         atoms_list = set().union(atoms_list, [atom.GetSymbol() for atom in atoms])
     return atoms_list
 
-# KL
+
+def kl_divergence(train_file, test_file):
+    """
+    Compute the KL divergence between two data distributions, i.e. their descriptor values and their internal
+    pairwise similarity.  With very large datasets it could be necessary to limit the measurements to smaller
+    ensemble fo molecules.
+
+    :param train_file: path to the file containing smiles strings of the reference molecules, one for line.
+    :param test_file: path to the file containing smiles strings of the generated molecules to evaluate, one for line.
+    :return: the KL divergence score.
+    """
+    # Retain only the set of unique valid reference molecules
+    _, ref_molecules = validity(train_file)
+    ref_molecules = set(ref_molecules)
+    # Retain only the set of unique valid generated molecules
+    _, gen_molecules = validity(test_file)
+    gen_molecules = set(gen_molecules)
+    # List of descriptors to which evaluate
+    descriptors = ['BertzCT', 'MolLogP', 'MolWt', 'TPSA', 'NumHAcceptors', 'NumHDonors', 'NumRotatableBonds',
+                   'NumAliphaticRings', 'NumAromaticRings']
+    # Calculate the descriptors, which are np.arrays of size n_samples x n_descriptors
+    ref_descriptors = calculate_descriptors(ref_molecules, descriptors)
+    gen_descriptors = calculate_descriptors(gen_molecules, descriptors)
+    # Object where the kl values will be saved
+    kl_divs = {}
+    # Calculate the kl divergence for the float valued descriptors
+    for i in range(4):
+        # Compute the kl divergence value for the distributions related to each descriptor
+        kl_div = continuous_kl_div(x_baseline=ref_descriptors[:, i], x_sampled=gen_descriptors[:, i])
+        # Save the result obtained
+        kl_divs[descriptors[i]] = kl_div
+    # Calculate the kl divergence for the int valued descriptors
+    for i in range(4, 9):
+        # Compute the kl divergence value for the distributions related to each descriptor
+        kl_div = discrete_kl_div(x_baseline=ref_descriptors[:, i], x_sampled=gen_descriptors[:, i])
+        # Save the result obtained
+        kl_divs[descriptors[i]] = kl_div
+    # Compute the internal pairwise similarity matrix for the reference molecules
+    ref_similarity = calculate_internal_pairwise_similarities(ref_molecules)
+    # Compute the maximum values within each row of the matrix
+    ref_similarity = np.max(ref_similarity, axis=1)
+    # Compute the internal pairwise similarity matrix for the generated molecules
+    gen_similarity = calculate_internal_pairwise_similarities(gen_molecules)
+    # Compute the maximum values within each row of the matrix
+    gen_similarity = np.max(gen_similarity, axis=1)
+    # Calculate the kl divergence value between the two similarity distributions
+    kl_divs['internal_similarity'] = continuous_kl_div(x_baseline=ref_similarity, x_sampled=gen_similarity)
+    # Each KL divergence value is transformed to be in [0, 1].
+    partial_scores = [np.exp(-score) for score in kl_divs.values()]
+    # Then their average delivers the final score.
+    score = sum(partial_scores) / len(partial_scores)
+    print(f'KL divergence score is: {score:10.4f}')
+    return score
+
+
+def calculate_descriptors(smiles, descriptors):
+    """
+    Compute the descriptors information for a list of molecules.
+
+    :param smiles: list of smiles strings of the molecules to evaluate.
+    :param descriptors:  list of strings defining the descriptor to use.
+    :return:
+    """
+    # Initialise empty list where to append the results
+    output = []
+    for smiles_string in smiles:
+        # For each molecule compute the descriptors information
+        molecule_info = _calculate_descriptors(smiles_string, descriptors)
+        # Append the result only if it is not None
+        if molecule_info is not None:
+            output.append(molecule_info)
+    # Return the list converted into array
+    return np.array(output)
+
+
+def _calculate_descriptors(smiles, descriptors):
+    """
+    Compute the descriptor for a provided molecule. The array values returned is cleaned from all the non finite
+    values if present.
+
+    :param smiles: a smiles string defining the smiles string to evaluate.
+    :param descriptors: list of strings defining the descriptor to use.
+    :return: an array with all the descriptors information for the provided molecule.
+    """
+    # Object to calculate descriptors for the provided molecule
+    calc = MoleculeDescriptors.MolecularDescriptorCalculator(descriptors)
+    # Convert the miles string into a mol object
+    mol = MolFromSmiles(smiles)
+    # Calculate all descriptors for a given molecule
+    mol_info = calc.CalcDescriptors(mol)
+    # Convert the result into an array
+    mol_info = np.array(mol_info)
+    # Keep track of the elements that are not finite (inf, nan)
+    mask = np.isfinite(mol_info)
+    # If one or more elements are not finite print a warning
+    if (mask == 0).sum() > 0:
+        print(f'{smiles} contains an NAN physchem descriptor')
+        # Then replace all the non finite values with zeros
+        mol_info[~mask] = 0
+    return mol_info
+
+
+def continuous_kl_div(x_baseline, x_sampled):
+    """
+    Computes the continuous Kullback–Leibler divergence (also called relative entropy) as a measure of how one
+    probability  distribution is different from a second reference probability distribution.
+
+    :param x_baseline: a numpy array of data on which to compute the first distribution (with pdf).
+    :param x_sampled: a numpy array of data on which to compute the second distribution (with pdf).
+    :return: the KL divergence value.
+    """
+    # Representation of kernel-density estimates using Gaussian kernels
+    kde_P = gaussian_kde(dataset=x_baseline)
+    kde_Q = gaussian_kde(dataset=x_sampled)
+    # Return evenly spaced numbers over a specified interval
+    x_eval = np.linspace(start=np.min(np.hstack([x_baseline, x_sampled])),
+                         stop=np.max(np.hstack([x_baseline, x_sampled])), num=1000)
+    # Evaluate the estimated pdf on a set of points
+    P = kde_P(x_eval) + 1e-10
+    Q = kde_Q(x_eval) + 1e-10
+    # Return the relative entropy of a distribution for given probability values with respect to a given sequence
+    return entropy(P, Q)
+
+
+def discrete_kl_div(x_baseline, x_sampled):
+    """
+    Computes the discrete Kullback–Leibler divergence (also called relative entropy) as a measure of how one probability
+    distribution is different from a second reference probability distribution.
+
+    :param x_baseline: a numpy array of data on which to compute the first distribution (with histograms).
+    :param x_sampled: a numpy array of data on which to compute the second distribution (with histograms).
+    :return: the KL divergence value.
+    """
+    # Compute the histogram of a set of data. The result is the value of the probability density function at the bin,
+    # normalized such that the integral over the range is 1.
+    P, bins = np.histogram(x_baseline, bins=10, density=True)
+    Q, _ = np.histogram(x_sampled, bins=bins, density=True)
+    P += 1e-10
+    Q += 1e-10
+    # Return the relative entropy of a distribution for given probability values with respect to a given sequence
+    return entropy(P, Q)
+
+
+def calculate_internal_pairwise_similarities(smiles_list):
+    """
+    Computes the pairwise similarities of the provided list of smiles against itself.
+
+    :param smiles_list: a collection of smiles strings.
+    :return: symmetric matrix of pairwise similarities. Diagonal is set to zero.
+    """
+    # Print a notification if the dataset of smiles is particularly large
+    if len(smiles_list) > 10000:
+        print(f'Calculating internal similarity on large set of SMILES strings ({len(smiles_list)})')
+    # Convert the smiles strings into mol objects
+    molecules = [MolFromSmiles(smiles) for smiles in smiles_list]
+    # And the mol objects into fingerprints
+    fingerprints = [Morgan(mol, radius=2, nBits=4096) for mol in molecules]
+    n_fingerprints = len(fingerprints)
+    # Instantiate a square table where to save the similarity values
+    similarities = np.zeros((n_fingerprints, n_fingerprints))
+    # For each
+    for i in range(1, n_fingerprints):
+        # Compute the Tanimoto similarity between the current and the previous fingerprints
+        sims = DataStructs.BulkTanimotoSimilarity(fingerprints[i], fingerprints[:i])
+        # Save the results in the symmetric matrix
+        similarities[i, :i] = sims
+        similarities[:i, i] = sims
+    return similarities
+
 # activity
