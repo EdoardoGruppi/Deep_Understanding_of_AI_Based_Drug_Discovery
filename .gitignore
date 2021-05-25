@@ -7,6 +7,9 @@ Datasets/*
 !Datasets/mcf_filters.txt
 !Datasets/pains_filters.txt
 !Datasets/all_filters.txt
+!Datasets/selected_targets.py
+
+Models/chembl_mcp_models
 
 a.py
 Saved Models
