@@ -11,6 +11,10 @@ from Modules.smiles_data_preparation import gen_data_vae
 from numpy.random import normal
 
 
+# The implemented model is a Variational Auto-Encoder that generates new molecules in a one-shot process. As for
+# CharRNN the input and the output molecules are represented by SMILES strings.
+
+
 class SmilesVae:
     def __init__(self, charset, max_length, latent_rep_size=292):
         """

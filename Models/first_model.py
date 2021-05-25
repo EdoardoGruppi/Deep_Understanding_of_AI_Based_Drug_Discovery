@@ -7,6 +7,11 @@ from tensorflow.keras.models import Model
 import tensorflow as tf
 
 
+# Model built on the basis of the example published by the spektral library.
+# https://github.com/danielegrattarola/spektral/blob/master/examples/graph_prediction/qm9_ecc.py
+# The model performs regression of molecular properties with the QM9 database, using a simple GNN in disjoint mode.
+
+
 class FirstModel:
     def __init__(self, node_features, edge_features):
         """
@@ -63,7 +68,7 @@ class FirstModel:
             model_loss += outs
             current_batch += 1
             if not current_batch % loader_tr.steps_per_epoch:
-                print(f"Epoch: {int(current_batch / loader_tr.steps_per_epoch)} - " 
+                print(f"Epoch: {int(current_batch / loader_tr.steps_per_epoch)} - "
                       f"Loss: {model_loss / loader_tr.steps_per_epoch:.3f}")
                 # Restart the loss parameters after every epoch
                 model_loss = 0

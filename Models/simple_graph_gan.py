@@ -11,6 +11,13 @@ from Modules.visualization import *
 import numpy as np
 
 
+# The model is a simple GAN that works on graph representation of molecules. The model is intended to be only an
+# attempt to face the graph molecule generation process using tensorflow and the spektral library. At the present the
+# model does not work since some tf. functions adopted to join the generator to the discriminator are not
+# differentiable. Specifically, such functions are tf.cast and tf.round that are employed to create the one-hot
+# encoding matrices used to generate the graph objects required by the spektral layers.
+
+
 class SimpleGan:
     def __init__(self, embedding_dim, node_features, edge_features, max_nodes, atom_types, edge_types=4):
         """
@@ -157,7 +164,8 @@ class SimpleGan:
 
     def tf_output_to_graph(self, gen_outputs):
         """
-        Converts each output of the generator into a graph represented by a node_matrix, a adj_matrix and a edge_matrix.
+        Converts each output of the generator into a graph represented by a node_matrix, a adj_matrix and a
+        edge_matrix.
 
         :param gen_outputs: a single generator output.
         :return: the related matrices.

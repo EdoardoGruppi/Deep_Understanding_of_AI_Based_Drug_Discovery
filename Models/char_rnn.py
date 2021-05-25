@@ -7,6 +7,10 @@ from math import ceil
 import numpy as np
 
 
+# The model exploits a series of RNN layers to sequentially generate a new molecule. The input and the output
+# molecules are represented by SMILES strings.
+
+
 class CharRNN:
     def __init__(self, input_shape, output_shape, char_int_dict, int_char_dict):
         """
