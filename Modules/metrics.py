@@ -14,7 +14,8 @@ import os
 import pkgutil
 import tempfile
 from Modules.config import *
-from pandas import DataFrame, Series
+from pandas import DataFrame, Series, concat
+from Models.cmp_model import ChEMBL27
 
 
 def validity(test_file, output=False):
@@ -595,7 +596,7 @@ def kl_divergence(train_file, test_file):
     partial_scores = [np.exp(-score) for score in kl_divs.values()]
     # Then their average delivers the final score.
     score = sum(partial_scores) / len(partial_scores)
-    print(f'KL divergence score is: {score:10.4f}')
+    print(f'KL divergence score is: {score:10.4f}\n')
     return score
 
 
@@ -713,4 +714,45 @@ def calculate_internal_pairwise_similarities(smiles_list):
         similarities[:i, i] = sims
     return similarities
 
-# activity
+
+def get_activity(test_file, confidence, targets=None, activity=('active', 'both')):
+    """
+    Get the activity of all the molecules in the test_file towards the selected targets.
+
+    :param test_file: path to the file containing smiles strings of the generated molecules to evaluate, one for line.
+    :param confidence: the level of confidence of the prediction. If the can be 70, 80 or 90.
+    :param targets: if None the prediction is computed for all the 500 available targets. Otherwise,
+        it corresponds to a list of target_ids on which to evaluate the given molecule.
+    :param activity: keep track only this kind of activity. It can be ['active', 'both', 'inactive', 'empty'].
+    :return: a dataframe with all the results.
+    """
+    # Retain only the set of unique valid generated molecules
+    _, gen_molecules = validity(test_file)
+    gen_molecules = set(gen_molecules)
+    # Number of unique valid molecules
+    n_unique_valid_molecules = len(gen_molecules)
+    # Instantiate ChEMBL27 model
+    model = ChEMBL27()
+    # Get a list of dataframes as a result
+    results = []
+    for mol in gen_molecules:
+        # Get the results and keep only some information
+        prediction = model.predict_activity(mol, targets)
+        prediction = prediction[['Target_chembl_id', 'Organism', 'Pref_name', f'{confidence}%']]
+        # Keep track of the molecule
+        prediction['Smiles'] = mol
+        # Delete all the dataframe rows where the molecule is not active
+        prediction = prediction[prediction[f'{confidence}%'].isin(activity)]
+        # Do not append the result if the dataframe is empty
+        if prediction.shape[0] > 0:
+            results.append(prediction)
+    # Concatenate all the dataframes
+    results = concat(results, ignore_index=True)
+    print('Results of the targets activity predictions ' + '-' * 8)
+    print(results.value_counts(['Target_chembl_id', f'{confidence}%']))
+    print('\nNormalised values')
+    print(results.value_counts(['Target_chembl_id', f'{confidence}%']) / n_unique_valid_molecules)
+    print('-' * 57 + '\n')
+    return results
+
+
