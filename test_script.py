@@ -17,8 +17,12 @@ test_dataset_filename = 'example2.txt'
 save_filename = 'output.txt'
 # ------------------------------------------------------------------
 
+# Savings directory path
+directory = os.path.join('Savings', 'Saved Results')
+# Create directory if it does not already exist
+os.makedirs(directory, exist_ok=True)
 # Open the txt file to write all the results achieved
-file = open("output.txt", "w")
+file = open(os.path.join(directory, "output.txt"), "w")
 sys.stdout = file
 
 # Path to the datasets

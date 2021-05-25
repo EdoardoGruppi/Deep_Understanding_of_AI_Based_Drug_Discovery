@@ -68,7 +68,7 @@ class SmilesVae:
         plt.show()
         if save:
             # Store to not having to train again...
-            self.model.save(os.path.join('Saved Models', 'SmilesVAE'))
+            self.model.save(os.path.join('Savings', 'Saved Models', 'SmilesVAE'))
 
     def test(self, test_data, batch_size):
         """
@@ -125,7 +125,9 @@ class SmilesVae:
         # Generate new molecules
         new_molecules = [predict_smiles(vector) for vector in latent_vectors]
         # Path to the filename.txt file
-        results_file = os.path.join('./Saved Results', filename)
+        results_file = os.path.join('Savings', 'Saved Results', filename)
+        # Create directory if it does not already exist
+        os.makedirs(os.path.join('Savings', 'Saved Results'), exist_ok=True)
         # Write all the molecules in the file, one per line
         with open(results_file, 'w') as f:
             for mol in new_molecules:
@@ -138,7 +140,7 @@ class SmilesVae:
         Load a model previously saved.
         """
         # Load to continue training or evaluate...
-        self.model = load_model(os.path.join('Saved Models', 'SmilesVAE'))
+        self.model = load_model(os.path.join('Savings', 'Saved Models', 'SmilesVAE'))
 
     def create_encoder(self, epsilon_std):
         """

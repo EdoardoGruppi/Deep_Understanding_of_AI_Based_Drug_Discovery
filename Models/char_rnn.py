@@ -54,7 +54,7 @@ class CharRNN:
         plt.show()
         if save:
             # Store to not having to train again...
-            self.model.save(os.path.join('Saved Models', 'SimpleCharRNN'))
+            self.model.save(os.path.join('Savings', 'Saved Models', 'SimpleCharRNN'))
 
     def test(self, test_data, test_labels, batch_size):
         """
@@ -75,14 +75,14 @@ class CharRNN:
         # Count correct and incorrect predictions
         no_false = np.count_nonzero(diff_results)
         no_true = diff_results.size - no_false
-        print(f'Average success rate on dataset: {np.round(100 * no_true / diff_results.size, 2)}')
+        print(f'Average success rate on the test dataset: {np.round(100 * no_true / diff_results.size, 2)}')
 
     def load_model(self):
         """
         Load a model previously saved.
         """
         # Load to continue training or evaluate...
-        self.model = load_model(os.path.join('Saved Models', 'SimpleCharRNN'))
+        self.model = load_model(os.path.join('Savings', 'Saved Models', 'SimpleCharRNN'))
 
     def generate_molecules(self, new_molecules, filename='CharRNN Results', plot=False):
         """
@@ -96,7 +96,9 @@ class CharRNN:
         # Generate the required number of molecules
         new_molecules = [self.generate_single_molecule(plot=plot) for _ in range(new_molecules)]
         # Path to the filename.txt file
-        results_file = os.path.join('./Saved Results', filename)
+        results_file = os.path.join('Savings', 'Saved Results', filename)
+        # Create directory if it does not already exist
+        os.makedirs(os.path.join('Savings', 'Saved Results'), exist_ok=True)
         # Write all the molecules in the file, one per line
         with open(results_file, 'w') as f:
             for molecule in new_molecules:
