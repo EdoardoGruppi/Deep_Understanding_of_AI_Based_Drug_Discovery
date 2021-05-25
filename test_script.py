@@ -66,5 +66,8 @@ atom_occurrences(test_dataset, atoms_list=chembl_atoms_list)
 # Compute the KL divergence value
 kl_score = kl_divergence(ref_dataset, test_dataset)
 
+# Get activity
+results = get_activity(test_dataset, confidence=80, targets=['CHEMBL2390810',  'CHEMBL5062', 'CHEMBL1947'])
+
 # Close the file
 file.close()
