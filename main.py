@@ -36,33 +36,36 @@ model.test(loader_te)
 # # Test the Gan model
 # model.test(samples=5)
 
-# CharRNN =========================================================
-# Load the data
-train_data, test_data, train_labels, test_labels, char_to_int, int_to_char = load_datasets('CHEMBL_FULL_DATASET.txt',
-                                                                                           test_size=0.1, samples=5000)
-# Instantiate the model
-model = CharRNN(input_shape=train_data.shape[2], output_shape=train_labels.shape[-1], char_int_dict=char_to_int,
-                int_char_dict=int_to_char)
-# Train the model
-model.train(train_data, train_labels, batch_size=128, epochs=2, save=True)
-# Test the model
-model.test(test_data, test_labels, batch_size=128)
-# # Load the model
-# model.load_model()
-# Generate new molecules
-model.generate_molecules(new_molecules=50)
+# # CharRNN =========================================================
+# # Load the data
+# train_data, test_data, train_labels, test_labels, char_to_int, int_to_char = load_datasets('CHEMBL_FULL_DATASET.txt',
+#                                                                                            test_size=0.1,
+#                                                                                            samples=5000)
+# # Instantiate the model
+# model = CharRNN(input_shape=train_data.shape[2], output_shape=train_labels.shape[-1], char_int_dict=char_to_int,
+#                 int_char_dict=int_to_char)
+# # Train the model
+# model.train(train_data, train_labels, batch_size=128, epochs=2, save=True)
+# # Test the model
+# model.test(test_data, test_labels, batch_size=128)
+# # # Load the model
+# # model.load_model()
+# # Generate new molecules
+# model.generate_molecules(new_molecules=50)
+#
+# # SmilesVAE ========================================================
+# # Load the data
+# train_data, test_data, charset, length = load_datasets_smiles_vae('CHEMBL_FULL_DATASET.txt', test_size=0.1,
+#                                                                   samples=5000)
+# # Instantiate the model
+# model = SmilesVae(charset=charset, max_length=length, latent_rep_size=292)
+# # Train the model
+# model.train(train_data, batch_size=128, epochs=2, save=True)
+# # Test the model
+# model.test(test_data, batch_size=128)
+# # # Load the model
+# # model.load_model()
+# # Generate new molecules
+# model.generate_molecules(samples=50, near_molecule=0, stddev=0.1, mean=0)
 
-# SmilesVAE ========================================================
-# Load the data
-train_data, test_data, charset, length = load_datasets_smiles_vae('CHEMBL_FULL_DATASET.txt', test_size=0.1,
-                                                                  samples=5000)
-# Instantiate the model
-model = SmilesVae(charset=charset, max_length=length, latent_rep_size=292)
-# Train the model
-model.train(train_data, batch_size=128, epochs=2, save=True)
-# Test the model
-model.test(test_data, batch_size=128)
-# # Load the model
-# model.load_model()
-# Generate new molecules
-model.generate_molecules(samples=50, near_molecule=0, stddev=0.1, mean=0)
+# create_cond_dataset('CHEMBL_FULL_DATASET.txt', 'chembl_prop.txt', activity=False)
