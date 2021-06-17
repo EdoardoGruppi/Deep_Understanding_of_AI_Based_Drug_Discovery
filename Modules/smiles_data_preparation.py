@@ -4,7 +4,10 @@ from collections import OrderedDict
 from sklearn.model_selection import train_test_split
 import numpy as np
 import os
+from Modules.metrics import sa_score, qed_score, get_activity
 from Modules.config import *
+from rdkit.Chem import MolFromSmiles
+from tqdm import tqdm
 
 
 def gen_data(data, char_int_dict, max_length):
@@ -113,3 +116,54 @@ def load_datasets_smiles_vae(filename, samples, test_size=0.1):
     # Shuffle and divide the dataset
     train_data, test_data = train_test_split(data, test_size=test_size, random_state=42, shuffle=True)
     return train_data, test_data, char_to_int, length + 1
+
+
+def create_cond_dataset(filename, new_filename, activity=False):
+    """
+    Given a dataset of smiles string, this function adds property scores with \t in between. If required,
+    the activity of each molecule is reported as well. 1 means the molecule is active towards the GSK-3beta protein.
+
+    :param filename: only the name of the file where the original dataset is saved.
+    :param new_filename: name of the file in which the new dataset is saved.
+    :param activity: boolean, if True the activity is also inserted.
+    :return:
+    """
+    # Get the paths of the old and new dataset filenames
+    path = os.path.join(base_dir, filename)
+    new_path = os.path.join(base_dir, new_filename)
+    # Transform every line of the file inot an item of a list
+    with open(path) as f:
+        data = f.read().splitlines()
+    # Create the new_file
+    new_file = open(new_path, 'w')
+    # If activity is required
+    if activity:
+        # Target found from the website:
+        # https://www.ebi.ac.uk/chembl/g/#search_results/all/query=Glycogen%20synthase%20kinase%203%20beta
+        # Find which molecules are considered active against the target selected
+        activities = get_activity(path, confidence=70, targets=['CHEMBL262'], activity=['active'])
+        # Get the list of active molecules
+        activities = activities['Smiles'].to_list()
+        # For every string in the old dataset
+        for item in tqdm(data):
+            # Retrieve the corresponding molecule object
+            mol = MolFromSmiles(item)
+            # Compute the SA and QED scores
+            sa = sa_score(mol)
+            qed = qed_score(mol)
+            # Compute the activity value (from boolean to integer)
+            value = 1 * (item in activities)
+            # Save the calculation within the new file
+            new_file.write(f'{item}\t{qed}\t{sa}\t{value}\n')
+    else:
+        # For every string in the old dataset
+        for item in tqdm(data):
+            # Retrieve the corresponding molecule object
+            mol = MolFromSmiles(item)
+            # Compute the SA and QED scores
+            sa = sa_score(mol)
+            qed = qed_score(mol)
+            # Save the calculation within the new file
+            new_file.write(f'{item}\t{qed}\t{sa}\n')
+    # Close the new file to save all the changes
+    new_file.close()
