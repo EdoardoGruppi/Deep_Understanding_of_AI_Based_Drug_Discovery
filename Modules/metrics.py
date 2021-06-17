@@ -11,8 +11,10 @@ import matplotlib.pyplot as plt
 import fcd
 import numpy as np
 import os
+import random
 import pkgutil
 import tempfile
+from tqdm import tqdm
 from Modules.config import *
 from pandas import DataFrame, Series, concat
 from Models.cmp_model import ChEMBL27
@@ -191,7 +193,21 @@ def property_distributions(list_files, list_names, prop='log_p', txt=True):
     plt.show()
 
 
-def frechet_distance(train_file, test_file, chem_net_model_filename='ChemNet_v0.13_pretrained.h5'):
+def get_random_subset(dataset, subset_size):
+    """
+    Create a random subset of some dataset.
+
+    :param dataset: original training dataset.
+    :param subset_size: target size of the subset, described as number of samples.
+    :return: return a random subset of a given dataset.
+    """
+    if len(dataset) < subset_size:
+        raise Exception(f'The dataset to extract a subset from is too small: {len(dataset)} < {subset_size}')
+    subset = random.sample(dataset, subset_size)
+    return subset
+
+
+def frechet_distance(train_file, test_file, chem_net_model_filename='ChemNet_v0.13_pretrained.h5', sample_size=10000):
     """
     Computes the Frechet distance between the training and test data distributions. With very large datasets it could
     be necessary to limit the measurements to smaller ensemble fo molecules.
@@ -200,6 +216,7 @@ def frechet_distance(train_file, test_file, chem_net_model_filename='ChemNet_v0.
     :param test_file: file path containing smiles strings of the generated molecules, one for line.
     :param chem_net_model_filename: name of the file for trained ChemNet model. Must be present in the 'fcd' package,
         since it will be loaded directly from there.
+    :param sample_size: size of the subset sampled from the reference set. default_value=10000
     :return: the FCD scores as presented in the original paper and in GuacaMol. While in the first case the lower
         values are better, in the second case they are as much better as they are close to 1.
     """
@@ -208,6 +225,8 @@ def frechet_distance(train_file, test_file, chem_net_model_filename='ChemNet_v0.
     # Retrieve only the valid molecules of the given .txt files
     _, reference_molecules = validity(train_file)
     _, generated_molecules = validity(test_file)
+    # Get a subset of the reference dataset
+    reference_molecules = get_random_subset(reference_molecules, sample_size)
     # Calculate the distribution statistics for each dataset
     mu_ref, cov_ref = calculate_distribution_statistics(chem_net, reference_molecules)
     mu, cov = calculate_distribution_statistics(chem_net, generated_molecules)
@@ -546,7 +565,7 @@ def get_atom_list(file):
     return atoms_list
 
 
-def kl_divergence(train_file, test_file):
+def kl_divergence(train_file, test_file, subset_size=None):
     """
     Compute the KL divergence between two data distributions, i.e. their descriptor values and their internal
     pairwise similarity.  With very large datasets it could be necessary to limit the measurements to smaller
@@ -554,6 +573,7 @@ def kl_divergence(train_file, test_file):
 
     :param train_file: path to the file containing smiles strings of the reference molecules, one for line.
     :param test_file: path to the file containing smiles strings of the generated molecules to evaluate, one for line.
+    :param subset_size: size of the sampling performed on the training dataset. default_value=None
     :return: the KL divergence score.
     """
     # Retain only the set of unique valid reference molecules
@@ -562,6 +582,11 @@ def kl_divergence(train_file, test_file):
     # Retain only the set of unique valid generated molecules
     _, gen_molecules = validity(test_file)
     gen_molecules = set(gen_molecules)
+    # If it is None set subset_size to the length of the generated set
+    if subset_size is None:
+        subset_size = len(gen_molecules)
+    # Get only a subset of the training dataset
+    ref_molecules = get_random_subset(ref_molecules, subset_size)
     # List of descriptors to which evaluate
     descriptors = ['BertzCT', 'MolLogP', 'MolWt', 'TPSA', 'NumHAcceptors', 'NumHDonors', 'NumRotatableBonds',
                    'NumAliphaticRings', 'NumAromaticRings']
@@ -735,7 +760,7 @@ def get_activity(test_file, confidence, targets=None, activity=('active', 'both'
     model = ChEMBL27()
     # Get a list of dataframes as a result
     results = []
-    for mol in gen_molecules:
+    for mol in tqdm(gen_molecules):
         # Get the results and keep only some information
         prediction = model.predict_activity(mol, targets)
         prediction = prediction[['Target_chembl_id', 'Organism', 'Pref_name', f'{confidence}%']]
@@ -754,5 +779,3 @@ def get_activity(test_file, confidence, targets=None, activity=('active', 'both'
     print(results.value_counts(['Target_chembl_id', f'{confidence}%']) / n_unique_valid_molecules)
     print('-' * 57 + '\n')
     return results
-
-

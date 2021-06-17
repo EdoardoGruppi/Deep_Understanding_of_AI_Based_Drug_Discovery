@@ -9,11 +9,13 @@ import os
 import sys
 
 # USER INPUTS -----------------------------------------------------
-# Path to the directory where the datasets are saved
+# Path to the directory where the dataset are saved
 datasets_dir = base_dir
-# Filenames of the datasets .txt files, one smiles string per line
-reference_dataset_filename = 'example.txt'
-test_dataset_filename = 'example2.txt'
+# Path to the directory where the results are saved
+savings_dir = os.path.join('Savings', 'Saved Results')
+# Filenames of the generated .txt files, one smiles string per line
+reference_dataset_filename = 'CHEMBL_FULL_DATASET.txt'
+test_dataset_filename = 'example.txt'
 save_filename = 'output.txt'
 # ------------------------------------------------------------------
 
@@ -22,7 +24,7 @@ directory = os.path.join('Savings', 'Saved Results')
 # Create directory if it does not already exist
 os.makedirs(directory, exist_ok=True)
 # Open the txt file to write all the results achieved
-file = open(os.path.join(directory, "output.txt"), "w")
+file = open(os.path.join(directory, save_filename), "w")
 sys.stdout = file
 
 # Path to the datasets
@@ -49,7 +51,7 @@ for prop in ['logP', 'MW', 'QED', 'SA', 'NP']:
     property_distributions([ref_dataset, test_dataset], list_names=['Reference', 'Generated'], prop=prop, txt=True)
 
 # Compute the FCD score
-FCD_score, fcd_score = frechet_distance(ref_dataset, test_dataset)
+FCD_score, fcd_score = frechet_distance(ref_dataset, test_dataset, sample_size=1000)
 
 # Filtering generated molecules
 molecules_passed = filter_molecules(test_dataset, check='complete', filters='pains_filters.txt')
@@ -64,10 +66,10 @@ snn, dfd = snn_metric(ref_dataset, test_dataset)
 atom_occurrences(test_dataset, atoms_list=chembl_atoms_list)
 
 # Compute the KL divergence value
-kl_score = kl_divergence(ref_dataset, test_dataset)
+kl_score = kl_divergence(ref_dataset, test_dataset, subset_size=1000)
 
 # Get activity
-results = get_activity(test_dataset, confidence=80, targets=['CHEMBL2390810',  'CHEMBL5062', 'CHEMBL1947'])
+results = get_activity(test_dataset, confidence=80, targets=['CHEMBL262'])
 
 # Close the file
 file.close()
