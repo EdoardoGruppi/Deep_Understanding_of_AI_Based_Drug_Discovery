@@ -1,8 +1,10 @@
 # Import packages
 import requests
-from rdkit.Chem.rdchem import BondType
-from rdkit.Chem import RWMol, Atom, SanitizeMol, MolToSmiles, MolFromSmiles
+from rdkit.Chem.rdchem import BondType, RWMol, Atom
+import os
+from rdkit.Chem import SanitizeMol, MolToSmiles, MolFromSmiles
 from Modules.config import *
+from pandas import read_csv
 
 # Dictionary to identify the type of each bond
 bond_types = {1: BondType.SINGLE, 2: BondType.DOUBLE, 3: BondType.TRIPLE, 4: BondType.AROMATIC}
@@ -103,4 +105,25 @@ def single_molecule(mol):
     return mol
 
 
+def extract_smiles_from_gcpn_csv(filename, num_samples):
+    """
 
+
+    :param filename:
+    :param num_samples:
+    :return:
+    """
+    dataframe = read_csv(os.path.join(base_dir, filename), sep=',')
+    smiles = [item[0] for item in dataframe.index.values]
+    with open(os.path.join(base_dir, 'GCPN_results.txt'), 'w') as f:
+        count = 0
+        exceptions = 0
+        while count < num_samples:
+            smiles_string = smiles[-(1 + count + exceptions)]
+            if '****' not in smiles_string:
+                f.write(smiles_string + '\n')
+                count += 1
+            else:
+                exceptions += 1
+                print(f'Actual count: {count}')
+                print(smiles_string)

@@ -4,10 +4,13 @@ from collections import OrderedDict
 from sklearn.model_selection import train_test_split
 import numpy as np
 import os
+from pandas import concat, read_csv
 from Modules.metrics import sa_score, qed_score, get_activity
 from Modules.config import *
 from rdkit.Chem import MolFromSmiles
 from tqdm import tqdm
+from Modules.metrics import validity
+from Models.cmp_model import ChEMBL27
 
 
 def gen_data(data, char_int_dict, max_length):
@@ -131,7 +134,7 @@ def create_cond_dataset(filename, new_filename, activity=False):
     # Get the paths of the old and new dataset filenames
     path = os.path.join(base_dir, filename)
     new_path = os.path.join(base_dir, new_filename)
-    # Transform every line of the file inot an item of a list
+    # Transform every line of the file into an item of a list
     with open(path) as f:
         data = f.read().splitlines()
     # Create the new_file
@@ -141,7 +144,7 @@ def create_cond_dataset(filename, new_filename, activity=False):
         # Target found from the website:
         # https://www.ebi.ac.uk/chembl/g/#search_results/all/query=Glycogen%20synthase%20kinase%203%20beta
         # Find which molecules are considered active against the target selected
-        activities = get_activity(path, confidence=70, targets=['CHEMBL262'], activity=['active'])
+        activities = get_activity(path, confidence=90, targets=['CHEMBL262'], activity=['active'])
         # Get the list of active molecules
         activities = activities['Smiles'].to_list()
         # For every string in the old dataset
@@ -167,3 +170,42 @@ def create_cond_dataset(filename, new_filename, activity=False):
             new_file.write(f'{item}\t{qed}\t{sa}\n')
     # Close the new file to save all the changes
     new_file.close()
+
+
+def dataset_activity(dataset_file, targets=None):
+    """
+    Get the activity of all the molecules in the test_file towards the selected targets.
+
+    :param dataset_file: path to the file containing smiles strings to evaluate, one per line.
+    :param targets: if None the prediction is computed for all the 500 available targets. Otherwise,
+        it corresponds to a list of target_ids on which to evaluate the given molecule.
+    :return: a dataframe with all the results.
+    """
+    # Retain only the set of unique valid generated molecules
+    _, gen_molecules = validity(dataset_file)
+    gen_molecules = set(gen_molecules)
+    # Instantiate ChEMBL27 model
+    model = ChEMBL27()
+    # Get a list of dataframes as a result
+    results = []
+    for mol in tqdm(gen_molecules):
+        # Get the results and keep only some information
+        prediction = model.predict_activity(mol, targets)
+        # Keep track of the molecule
+        prediction['Smiles'] = mol
+        results.append(prediction)
+    # Concatenate all the dataframes
+    results = concat(results, ignore_index=True)
+    results.to_csv(os.path.join(base_dir, 'chembl_CFD_activity.csv'))
+    return results
+
+
+def activity_subset(filename, activity=('active', 'both'), confidence=70):
+    dataframe = read_csv(os.path.join(base_dir, filename))
+    print(f'Original dataframe length: {len(dataframe)}')
+    dataframe = dataframe[dataframe[f'{confidence}%'].isin(activity)]
+    print(f'New dataset length: {len(dataframe)}')
+    with open(os.path.join(base_dir, 'active_chembl_27.txt'), 'w') as f:
+        smiles = list(dataframe['Smiles'])
+        for smile in smiles:
+            f.write(smile + '\n')
