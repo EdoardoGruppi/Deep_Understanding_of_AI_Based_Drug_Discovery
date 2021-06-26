@@ -282,7 +282,7 @@ def load_chem_net(chem_net_model_filename):
     return fcd.load_ref_model(model_path)
 
 
-def filter_molecules(file, allowed=None, filters='pains_filters.txt', check='filters'):
+def filter_molecules(file, allowed=None, filters='pains_filters.txt', check='filters', qed=None, sa=None):
     """
     Checks if the molecules generated pass the MCF and/or PAINS filters, have only allowed atoms and are not charged.
 
@@ -292,6 +292,8 @@ def filter_molecules(file, allowed=None, filters='pains_filters.txt', check='fil
         filters, 'mcf_filters.txt' for mfc filters, 'all_filters.txt' for both.
     :param check: variable defining which type of check to perform. It can be partial ('filters'), i.e. only filters,
         or 'complete'.
+    :param qed: minimum qed value required to pass the check. If None, it is not considered. default_value=None
+    :param sa: maximum sa value required to pass the check. If None, it is not considered. default_value=None
     :return: the list of smiles strings of the molecules that passed the check.
     """
     print(f'Filtering the generated molecules with {check} check. Filters selected are: {filters.split(".")[0]}.')
@@ -309,20 +311,22 @@ def filter_molecules(file, allowed=None, filters='pains_filters.txt', check='fil
     # Convert them to mol objects
     molecules = [MolFromSmiles(smiles) for smiles in smiles_molecules]
     # Retain only the molecules that pass the check process
-    molecules = [mol for mol in molecules if check(mol, filters, allowed)]
+    molecules = [mol for mol in molecules if check(mol, filters, allowed, qed, sa)]
     # Represent them with smiles strings
     passed_molecules = [MolToSmiles(mol) for mol in molecules]
     print(f'{len(passed_molecules) * 100 / len(smiles_molecules):.2f}% of molecules successfully passed the check.\n')
     return passed_molecules
 
 
-def mol_passes_complete_check(mol, filters, allowed=None):
+def mol_passes_complete_check(mol, filters, allowed=None, qed=None, sa=None):
     """
     Check if a molecule successfully pass a series of pre-defined conditions.
 
     :param mol: mol object to test.
-    :param filters: list of filters as mol objects to consider in the evaluation.
+    :param filters: list of filters (as mol objects) to consider in the evaluation.
     :param allowed: list of allowed atoms.
+    :param qed: minimum qed value required to pass the check. If None, it is not considered. default_value=None
+    :param sa: maximum sa value required to pass the check. If None, it is not considered. default_value=None
     :return: a boolean. True if the molecule passed successfully all the conditions.
     """
     # Return False if the mol object is None
@@ -351,15 +355,25 @@ def mol_passes_complete_check(mol, filters, allowed=None):
     # Remove molecules whose conversion to mol object returns None
     if MolFromSmiles(smiles) is None:
         return False
+    # Rule out molecules whose QED value is less than the one required
+    if qed is not None:
+        if qed_score(mol) < qed:
+            return False
+    # Exclude molecules whose SA value is greater than the one required
+    if sa is not None:
+        if sa_score(mol) > sa:
+            return False
     return True
 
 
-def mol_passes_filters(mol, filters, allowed=None):
+def mol_passes_filters(mol, filters, qed=None, sa=None, allowed=None):
     """
     Check if a molecule successfully pass the filtering process.
 
     :param mol: mol object to test.
     :param filters: list of filters as mol objects to consider in the evaluation.
+    :param qed: minimum qed value required to pass the check. If None, it is not considered. default_value=None
+    :param sa: maximum sa value required to pass the check. If None, it is not considered. default_value=None
     :param allowed: not required.
     :return: a boolean. True if the molecule passed successfully all the conditions.
     """
@@ -371,6 +385,12 @@ def mol_passes_filters(mol, filters, allowed=None):
     # Filter molecules by means of the given filters
     if any(h_mol.HasSubstructMatch(smarts) for smarts in filters):
         return False
+    if qed is not None:
+        if qed_score(mol) < qed:
+            return False
+    if sa is not None:
+        if sa_score(mol) > sa:
+            return False
     return True
 
 
