@@ -156,6 +156,16 @@ def np_score(mol):
     return npscorer.scoreMol(mol, fscore=np_f_score)
 
 
+def get_num_atoms(mol):
+    """
+    Computes the number of heavy atoms contained in the mol object.
+
+    :param mol: input rdkit molecule object.
+    :return: the NP score of the molecule.
+    """
+    return mol.GetNumAtoms()
+
+
 def property_distributions(list_files, list_names, prop='log_p', txt=True):
     """
     Compares the distribution of the property values obtained with different datasets.
@@ -169,7 +179,7 @@ def property_distributions(list_files, list_names, prop='log_p', txt=True):
     :return: the comparison between the distributions plots.
     """
     # Dictionary of functions that can be called to compute the molecule properties
-    dictionary = {'logP': log_p, 'MW': weight, 'QED': qed_score, 'SA': sa_score, 'NP': np_score}
+    dictionary = {'logP': log_p, 'MW': weight, 'QED': qed_score, 'SA': sa_score, 'NP': np_score, 'Atoms': get_num_atoms}
     # Select the chosen property to evaluate
     prop_function = dictionary[prop]
     # If True then list_files is a list of txt paths where the smiles string must be read.
@@ -534,14 +544,14 @@ def atom_occurrences(file, atoms_list=('C', 'O', 'N', 'Cl', 'F')):
     """
     # Consider only the valid molecules
     _, molecules = validity(file)
-    # Convert each string into a mol object
-    molecules = [MolFromSmiles(molecule) for molecule in molecules]
     # Create an empty dataframe to count the occurrences of the atoms in each molecule
     dataframe = DataFrame(columns=atoms_list)
     # For every mol object...
-    for molecule in molecules:
+    for molecule in tqdm(molecules):
+        # Convert the SMILES string into a mol object
+        mol = MolFromSmiles(molecule)
         # Get the list of atom symbols
-        atoms = molecule.GetAtoms()
+        atoms = mol.GetAtoms()
         symbols = [atom.GetSymbol() for atom in atoms]
         # Append a new row in the dataframe with the number of times each atom is used
         dataframe = dataframe.append(Series([symbols.count(atom_type) for atom_type in atoms_list],

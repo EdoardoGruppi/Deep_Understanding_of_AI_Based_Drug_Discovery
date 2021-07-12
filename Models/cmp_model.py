@@ -145,3 +145,20 @@ class ChEMBL27:
         # Return the results as a pandas dataframe
         predictions = DataFrame(predictions)
         return predictions
+
+    def predict_single_molecule(self, smiles, targets=None, confidence=90):
+        """
+        Computes the activity of a given molecule under a specific confidence level. It returns 1.0 if the molecule
+        is active, 0 otherwise.
+
+        :param smiles: smiles string defining the molecule to evaluate.
+        :param targets: if None the prediction is computed for all the 500 available targets. Otherwise,
+            it corresponds to a list of target_ids on which to evaluate the given molecule.
+        :param confidence: confidence level of the prediction.
+        :return: a float value describing the molecule's activity.
+        """
+        predictions = self.predict_activity(smiles, targets)
+        if predictions.iloc[0][f'{confidence}%'] in ['active']:
+            return 1.0
+        else:
+            return 0.0

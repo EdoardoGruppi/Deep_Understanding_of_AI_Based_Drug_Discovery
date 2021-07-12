@@ -15,8 +15,9 @@ datasets_dir = base_dir
 savings_dir = os.path.join('Savings', 'Saved Results')
 # Filenames of the generated .txt files, one smiles string per line
 reference_dataset_filename = 'CHEMBL_FULL_DATASET.txt'
-test_dataset_filename = 'MolRNN_qed_sa_gsk_30000_molecules.txt'
-save_filename = 'MolRNN_qed_sa_gsk_30000_metrics.txt'
+test_dataset_filename = 'molRNN_molecules.txt'
+save_filename = 'molRNN_metrics.txt'
+subset_size = 2000
 # ------------------------------------------------------------------
 
 # Savings directory path
@@ -50,16 +51,16 @@ uniqueness_value = uniqueness(test_file=test_dataset)
 file.flush()
 
 # # Comparison between the property distributions
-# for prop in ['logP', 'MW', 'QED', 'SA', 'NP']:
+# for prop in ['logP', 'MW', 'QED', 'SA', 'NP', 'Atoms']:
 #     property_distributions([
 #         os.path.join(base_dir, 'CHEMBL_FULL_DATASET.txt'),
-#         os.path.join(base_dir, 'molRNN_molecules.txt'),
-#         os.path.join(base_dir, 'GCPN_molecules.txt'),
-#         os.path.join(base_dir, 'REINVENT_RL_sa_qed_gsk_molecules.txt')],
-#         list_names=['Reference', 'MolRNN', 'GCPN', 'REINVENT'], prop=prop, txt=True)
+#         os.path.join(base_dir, 'HierVAE_molecules.txt'),
+#         os.path.join(base_dir, 'Yasonik_molecules.txt')
+#         ],
+#         list_names=['CHEMBL', 'HierVAE', 'Yasonik'], prop=prop, txt=True)
 
 # Compute the FCD score
-FCD_score, fcd_score = frechet_distance(ref_dataset, test_dataset, sample_size=2000)
+FCD_score, fcd_score = frechet_distance(ref_dataset, test_dataset, sample_size=subset_size)
 file.flush()
 
 # Filtering generated molecules
@@ -84,7 +85,7 @@ atom_occurrences(test_dataset, atoms_list=chembl_atoms_list)
 file.flush()
 
 # Compute the KL divergence value
-kl_score = kl_divergence(ref_dataset, test_dataset, subset_size=2000)
+kl_score = kl_divergence(ref_dataset, test_dataset, subset_size=subset_size)
 file.flush()
 
 # Get activity
