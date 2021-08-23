@@ -9,7 +9,18 @@ Datasets/*
 !Datasets/all_filters.txt
 !Datasets/selected_targets.py
 
-Models/chembl_mcp_models
+Models/chembl_mcp_models/models/*
+!Models/chembl_mcp_models/models/CHEMBL4822
+!Models/chembl_mcp_models/models/CHEMBL239
+!Models/chembl_mcp_models/models/CHEMBL301
+!Models/chembl_mcp_models/models/CHEMBL234
+
+Models/chembl_mcp_models/scalers/*
+!Models/chembl_mcp_models/scalers/CHEMBL4822_scaler.pkl
+!Models/chembl_mcp_models/scalers/CHEMBL239_scaler.pkl
+!Models/chembl_mcp_models/scalers/CHEMBL301_scaler.pkl
+!Models/chembl_mcp_models/scalers/CHEMBL234_scaler.pkl
+
 
 a.py
 Saved Models

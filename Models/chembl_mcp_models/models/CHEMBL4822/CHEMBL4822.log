@@ -1,0 +1,2 @@
+2021-03-10 17:47:12,998 - conformal_prediction_info - INFO - Namespace(confidence='80', input_file='chembl27_training_files_repro//CHEMBL4822/CHEMBL4822_train.pkl', output_dir='chembl27_model_results_repro_80', target_name='CHEMBL4822')
+2021-03-10 17:47:33,230 - conformal_prediction_info - INFO - CHEMBL4822, sensitivity: 0.8837820091923835, specificity: 0.8849252013808976, precision: 0.9308437067773168, f1: 0.9067025934658134, mcc: 0.7561206169803545, ccr: 0.8843536052866405, coverage: 0.9164750957854406
