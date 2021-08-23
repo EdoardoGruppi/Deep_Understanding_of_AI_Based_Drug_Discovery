@@ -75,6 +75,10 @@
    ```
    C:\Users\<'name user'>\anaconda3\envs\<'name env'>\Lib\site-packages\rdkit
    ```
+   
+   **Note:** alternatively, it is possible to download the Contrib folder from the official 
+   [GitHub page](https://github.com/rdkit/rdkit/tree/master/Contrib) of rdkit. In particular, be sure that the downloaded 
+   directory includes both the NP_Score and SA_Score subfolders.
 
 8. To run the target prediction model is necessary to download the model and scalers files from the link provided by the authors of the ChEMBL_27 model (for more details visit their GitHub repository [chembl/of_conformal](https://github.com/chembl/of_conformal)). The files required can be downloaded by typing in the windows terminal under a precise location the following line:
 
