@@ -18,6 +18,7 @@ from tqdm import tqdm
 from Modules.config import *
 from pandas import DataFrame, Series, concat
 from Models.cmp_model import ChEMBL27
+import pickle
 
 
 def validity(test_file, output=False):
@@ -142,6 +143,16 @@ def sa_score(mol):
     return sascorer.calculateScore(mol)
 
 
+def get_num_atoms(mol):
+    """
+    Computes the number of heavy atoms contained in the mol object.
+
+    :param mol: input rdkit molecule object.
+    :return: the NP score of the molecule.
+    """
+    return mol.GetNumAtoms()
+
+
 # Compute only once the second argument required to compute the NP score.
 np_f_score = npscorer.readNPModel()
 
@@ -154,16 +165,6 @@ def np_score(mol):
     :return: the NP score of the molecule.
     """
     return npscorer.scoreMol(mol, fscore=np_f_score)
-
-
-def get_num_atoms(mol):
-    """
-    Computes the number of heavy atoms contained in the mol object.
-
-    :param mol: input rdkit molecule object.
-    :return: the NP score of the molecule.
-    """
-    return mol.GetNumAtoms()
 
 
 def property_distributions(list_files, list_names, prop='log_p', txt=True):
@@ -449,7 +450,7 @@ def get_fingerprints(smiles_mol_array):
     # Keep note of the indexes of the duplicates and remove them
     smiles_mol_array, inv_index = np.unique(smiles_mol_array, return_inverse=True)
     # Compute all the fingerprints
-    fingerprints = [get_fingerprint(mol) for mol in smiles_mol_array]
+    fingerprints = [get_fingerprint(mol) for mol in tqdm(smiles_mol_array)]
     # Stack them into a nd array
     fingerprints = np.vstack(fingerprints)
     # Return the fingerprints of all the smiles strings including of the duplicates
@@ -477,7 +478,7 @@ def average_agg_tanimoto(stock_vectors, gen_vectors, batch_size=100, agg='max', 
     agg_tanimoto = np.zeros(num_gen_vectors)
     total = np.zeros(num_gen_vectors)
     # Every batch_size vectors of the first dataset
-    for j in range(0, num_stock_vectors, batch_size):
+    for j in tqdm(range(0, num_stock_vectors, batch_size)):
         x_stock = stock_vectors[j:j + batch_size]
         # Consider one batch of vectors of the second dataset after the other
         for i in range(0, num_gen_vectors, batch_size):
@@ -509,25 +510,34 @@ def average_agg_tanimoto(stock_vectors, gen_vectors, batch_size=100, agg='max', 
     return np.mean(agg_tanimoto)
 
 
-def snn_metric(file_ref, file_gen):
+def snn_metric(file_ref, file_gen, pkl=True, batch_size=100):
     """
     Computes the snn metric as: SNN = 1/|A| sum_{x in AxA} max{y in RxR} tanimoto(x, y). A metric DfD is also
     returned as: 1 - SNN.
 
     :param file_ref: path to the file containing the reference smiles strings to evaluate, one for line.
     :param file_gen: path to the file containing the generated smiles strings to evaluate, one for line.
+    :param pkl: if True file_ref indicates the path to the pkl file containing all the fingerprints of the reference
+        dataset.
+    :param batch_size: number of samples contemporary evaluated in the tanimoto distance calculation.
     :return: the SNN and DfD scores [0,1]. If generated molecules are far from the reference molecules they SNN and DfD
         values are respectively closer to 0 and 1.
     """
-    # Retain only the reference smiles strings that correspond to valid molecules
-    _, ref_molecules = validity(file_ref)
+    if pkl:
+        # Open the file in binary mode
+        with open(file_ref, 'rb') as file:
+            # Call load method to deserialize
+            ref_fingerprints = pickle.load(file)
+    else:
+        # Retain only the reference smiles strings that correspond to valid molecules
+        _, ref_molecules = validity(file_ref)
+        # Convert the molecules into Morgan fingerprints
+        ref_fingerprints = get_fingerprints(ref_molecules)
     # Retain only the generated smiles strings that correspond to valid molecules
     _, gen_molecules = validity(file_gen)
-    # Convert the molecules into Morgan fingerprints
-    ref_fingerprints = get_fingerprints(ref_molecules)
     gen_fingerprints = get_fingerprints(gen_molecules)
     # Compute the internal diversity score
-    snn = average_agg_tanimoto(ref_fingerprints, gen_fingerprints, agg='max', p=1)
+    snn = average_agg_tanimoto(ref_fingerprints, gen_fingerprints, batch_size=batch_size, agg='max', p=1)
     dfd = 1 - snn
     print(f'SNN metric is: {snn:.4f} - DfD is: {dfd:.4f}')
     return snn, dfd
@@ -696,7 +706,7 @@ def _calculate_descriptors(smiles, descriptors):
     mask = np.isfinite(mol_info)
     # If one or more elements are not finite print a warning
     if (mask == 0).sum() > 0:
-        print(f'{smiles} contains an NAN physchem descriptor')
+        print(f'{smiles} contains a NAN descriptor')
         # Then replace all the non finite values with zeros
         mol_info[~mask] = 0
     return mol_info
