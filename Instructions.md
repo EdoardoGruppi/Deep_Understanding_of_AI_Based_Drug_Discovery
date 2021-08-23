@@ -98,11 +98,11 @@
 
 ## Run the code
 
-Once all the necessary packages have been installed you can run the code by typing this line on the terminal or by the
+Once all the necessary packages have been installed you can run the test script by typing this line on the terminal or by the
 specific command within the IDE.
 
 ```
-python main.py
+python test_script.py
 ```
 
 ## Issues
