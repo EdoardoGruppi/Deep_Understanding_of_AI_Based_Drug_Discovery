@@ -1,6 +1,7 @@
 # Description of the project
 
-[Project](https://github.com/EdoardoGruppi/Graph_Based_Learning_For_Drug_Discovery) ~ [Guide](https://github.com/EdoardoGruppi/Graph_Based_Learning_For_Drug_Discovery/blob/main/Instructions.md)
+[Project](https://github.com/EdoardoGruppi/Graph_Based_Learning_For_Drug_Discovery) ~ [Related Project](https://github.com/EdoardoGruppi/Drug_Design_Models)
+ ~ [Guide](https://github.com/EdoardoGruppi/Graph_Based_Learning_For_Drug_Discovery/blob/main/Instructions.md)
 
 The present study is finalised to determine the most advanced models in the literature capable of producing new
 high-quality molecules starting from well-known datasets. The selection is carried out through a series of evaluation
