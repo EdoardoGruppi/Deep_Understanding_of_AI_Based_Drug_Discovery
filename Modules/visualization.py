@@ -1,10 +1,10 @@
 # Import packages
 from rdkit.Chem import Draw, GetAdjacencyMatrix
 from Modules.utils import *
-import matplotlib.pyplot as plt
 import pandas as pd
 from Modules.metrics import *
 import seaborn as sns
+import random
 
 
 def show_mol(mol, name=False):
@@ -128,3 +128,30 @@ def plot_histograms(dataframe, figsize=(12, 4)):
     plt.tight_layout()
     plt.show()
 
+
+def visualize_generated_molecules(filename, n_samples=4):
+    """
+    Creates an image where n randomly picked molecules are displayed in a row.
+
+    :param filename: name of the file where the generated molecules are stored.
+    :param n_samples: number of samples to insert in the image.
+    :return:
+    """
+    sns.set()
+    path = os.path.join(base_dir, filename)
+    with open(path, 'r') as f:
+        molecules = f.read().splitlines()
+    # Pick n samples randomly
+    random_samples = random.sample(molecules, n_samples)
+    # Create the plot object
+    f, axs = plt.subplots(1, n_samples, figsize=(4*n_samples, 4))
+    # Create one subplot at a time
+    for count, molecule in enumerate(random_samples):
+        mol = MolFromSmiles(molecule)
+        qed = qed_score(mol)
+        sa = sa_score(mol)
+        axs[count].imshow(Draw.MolToImage(mol))
+        axs[count].axis('off')
+        axs[count].set_title(f'QED: {qed:.2f} - SA: {sa:.2f}', fontsize=18, y=-0.01)
+    plt.tight_layout()
+    plt.show()
