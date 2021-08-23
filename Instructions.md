@@ -101,28 +101,9 @@
 Once all the necessary packages have been installed you can run the code by typing this line on the terminal or by the
 specific command within the IDE.
 
-**Note:** To follow step by step the main execution take a look at the dedicated Section below.
-
 ```
 python main.py
 ```
-
-## Datasets
-
-### Chembl
-
-### QM9
-
-## Main execution
-
-Before the execution of the code, the Datasets folder must be left empty. Once the functions displayed below are
-called...
-
-UPDATE
-
-...the folder presents the following structure.
-
-UPDATE
 
 ## Issues
 
