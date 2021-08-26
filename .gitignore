@@ -21,6 +21,7 @@ Models/chembl_mcp_models/scalers/*
 !Models/chembl_mcp_models/scalers/CHEMBL301_scaler.pkl
 !Models/chembl_mcp_models/scalers/CHEMBL234_scaler.pkl
 
+Docking Results/*
 
 a.py
 Saved Models
