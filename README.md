@@ -68,14 +68,9 @@ details it is reccomended to directly reference to the related official websites
 
 ## Role of each file
 
-**main.py** is the starting point of the entire project. It defines the order in which instructions are realised. More
-precisely, it is responsible to call functions from other files in order to divide the datasets provided, pre-process
-images as well as to instantiate, train and test the models.
+**main.py** it is the starting point of all the experiments conducted to understand the mechanisms of the de novo drug design generative models.
 
-**config.py** makes available all the global variables used in the project.
-
-**utilities.py** includes functions to download and split the datasets in the dedicated folder, to compute the mean RGB
-value of the dataset and to plot results.
+**test_script.py** contains a wide set of metrics useful to understand the quality of a collection of molecules.
 
 ## Software used
 
